@@ -1,0 +1,33 @@
+# Copyright 2024 KU Leuven.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+name: build-conda
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+jobs:
+  build-conda:
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/condaforge/linux-anvil-x86_64:alma8
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Activate conda explicitly
+        run: |
+          echo "/opt/conda/bin" >> $GITHUB_PATH
+          echo "CONDA_PREFIX=/opt/conda" >> $GITHUB_ENV
+          echo "source /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc
+      - name: Generate recipe based on pixi.toml
+        run: |
+          python genrecipe.py "${{ github.ref_name }}" > recipe.yaml
+        working-directory: util/conda
+      - name: Build conda package
+        uses: prefix-dev/rattler-build-action@v0.2.23
+        with:
+          recipe-path: util/conda/recipe.yaml
+          build-args: -c conda-forge -c kuleuven-micas --experimental

@@ -1,0 +1,510 @@
+# Copyright 2020 ETH Zurich and University of Bologna.
+# Solderpad Hardware License, Version 0.51, see LICENSE for details.
+# SPDX-License-Identifier: SHL-0.51
+
+package:
+  name: snitch_cluster
+  authors:
+    - Florian Zaruba <zarubaf@iis.ee.ethz.ch>
+    - Fabian Schuiki <fschuiki@iis.ee.ethz.ch>
+    - Paul Scheffler <paulsc@iis.ee.ethz.ch>  # current maintainer
+    - Thomas Benz <tbenz@iis.ee.ethz.ch>
+    - Gianna Paulin <pauling@iis.ee.ethz.ch>
+    - Tim Fischer <fischeti@iis.ee.ethz.ch>
+    - Noah Huetter <huettern@ethz.ch>
+    - Luca Colagrande <colluca@iis.ee.ethz.ch>
+    - Samuel Riedel <sriedel@iis.ee.ethz.ch>
+    - Nils Wistoff <nwistoff@iis.ee.ethz.ch>
+    - Luca Bertaccini <lbertaccini@iis.ee.ethz.ch>
+    - Matheus Cavalcante <matheusd@iis.ee.ethz.ch>
+    - Xiaoling Yi <xiaoling.yi@esat.kuleuven.be>
+    - Ryan Antonio <ryan.antonio@esat.kuleuven.be>
+    - Guilherme Paim <gppaim@ieee.org>
+
+dependencies:
+  axi:                { git: https://github.com/pulp-platform/axi,                version:  0.39.1  }
+  axi_riscv_atomics:  { git: https://github.com/pulp-platform/axi_riscv_atomics,  version:  0.8.2   }
+  common_cells:       { git: https://github.com/pulp-platform/common_cells,       version:  1.28.0  }
+  FPnew:              { git: https://github.com/pulp-platform/cvfpu.git,      rev:      pulp-v0.2.3 }
+  register_interface: { git: https://github.com/pulp-platform/register_interface, version:  0.4.2   }
+  tech_cells_generic: { git: https://github.com/pulp-platform/tech_cells_generic, version:  0.2.11  }
+  riscv-dbg:          { git: https://github.com/pulp-platform/riscv-dbg,          version:  0.8.0   }
+  cluster_icache:     { git:  https://github.com/KULeuven-MICAS/cluster_icache,     rev: main }
+  hwpe-mac-engine:    { git: https://github.com/KULeuven-MICAS/hwpe-mac-engine.git, rev: 5d3b4525b665169fc8321c8a811f3c83ad3c72e8 }
+  hypercorex:         { git: "https://github.com/KULeuven-MICAS/hypercorex.git", rev: main }
+  dimc:               { git: "https://github.com/KULeuven-MICAS/snax-dimc.git", rev: main }
+  cgra:               { git: "https://github.com/KULeuven-MICAS/snax_cgra.git", rev: main }
+  xdma_axi_adapter:   { git: https://github.com/KULeuven-MICAS/xdma_axi_adapter.git, rev: main }
+
+vendor_package:
+  - name: musl
+    target_dir: sw/math
+    upstream: { git: https://github.com/kraj/musl.git, rev: 7a43f6fea9081bdd53d8a11cef9e9fab0348c53d } # v1.2.4
+    patch_dir: sw/deps/patches/musl
+    include_from_upstream:
+      - "COPYRIGHT"
+      - "Makefile"
+      - ".gitignore"
+      - "README"
+      - "src/math/ceil.c"
+      - "src/math/ceilf.c"
+      - "src/math/ceill.c"
+      - "src/math/expm1.c"
+      - "src/math/expf.c"
+      - "src/math/exp2f_data.c"
+      - "src/math/exp2f_data.h"
+      - "src/math/log2.c"
+      - "src/math/log2_data.c"
+      - "src/math/log2_data.h"
+      - "src/math/log2f.c"
+      - "src/math/log2f_data.c"
+      - "src/math/log2f_data.h"
+      - "src/math/__math_divzero.c"
+      - "src/math/__math_invalid.c"
+      - "src/math/__math_invalidf.c"
+      - "src/math/__math_invalidl.c"
+      - "src/math/__math_oflow.c"
+      - "src/math/__math_oflowf.c"
+      - "src/math/__math_uflow.c"
+      - "src/math/__math_uflowf.c"
+      - "src/math/__math_xflow.c"
+      - "src/math/__math_xflowf.c"
+      - "src/math/sqrt.c"
+      - "src/math/sqrtf.c"
+      - "src/math/sqrt_data.c"
+      - "src/math/sqrt_data.h"
+      - "src/math/tanh.c"
+      - "src/internal/libm.h"
+      - "src/include/features.h"
+      - "include/endian.h"
+      - "include/math.h"
+      - "include/features.h"
+      - "include/float.h"
+      - "include/alltypes.h.in"
+      - "arch/riscv64/bits/alltypes.h.in"
+      - "arch/riscv64/bits/float.h"
+      - "tools/mkalltypes.sed"
+      - "arch/generic/fp_arch.h"
+
+export_include_dirs:
+  - hw/reqrsp_interface/include
+  - hw/mem_interface/include
+  - hw/tcdm_interface/include
+  - hw/snitch/include
+  - hw/snitch_ssr/include
+
+sources:
+  # Note: These tapeout tags are for internal use only
+  # tapeout tags:
+  - target: all(tech_cells_generic_exclude_tc_sram, tc_sram_cluster_only)
+    files:
+      - /users/micas/shares/project_snax/tapeout_modules/snax_cluster/tc_sram_impl.sv
+  # future
+  - files:
+      # Level 0
+      - hw/future/src/mem_to_axi_lite.sv
+      - hw/future/src/idma_reg64_frontend_reg_pkg.sv
+      - hw/future/src/idma_tf_id_gen.sv
+      - hw/future/src/dma/axi_dma_data_path.sv
+      - hw/future/src/axi_interleaved_xbar.sv
+      # Level 1
+      - hw/future/src/axi_zero_mem.sv
+      - hw/future/src/idma_reg64_frontend_reg_top.sv
+      # Level 2
+      - hw/future/src/idma_reg64_frontend.sv
+      - hw/future/src/dma/axi_dma_data_mover.sv
+      - hw/future/src/dma/axi_dma_burst_reshaper.sv
+      # Level 3
+      - hw/future/src/dma/axi_dma_backend.sv
+  - target: test
+    files:
+      - hw/future/test/fixture_axi_dma_backend.sv
+      - hw/future/test/tb_axi_dma_backend.sv
+
+  # reqrsp_interface
+  - files:
+      # Level 0
+      - hw/reqrsp_interface/src/reqrsp_pkg.sv
+      # Level 1
+      - hw/reqrsp_interface/src/reqrsp_intf.sv
+      # Level 2
+      - hw/reqrsp_interface/src/axi_to_reqrsp.sv
+      - hw/reqrsp_interface/src/reqrsp_cut.sv
+      - hw/reqrsp_interface/src/reqrsp_demux.sv
+      - hw/reqrsp_interface/src/reqrsp_iso.sv
+      - hw/reqrsp_interface/src/reqrsp_mux.sv
+      - hw/reqrsp_interface/src/reqrsp_to_axi.sv
+  - target: simulation
+    files:
+      - hw/reqrsp_interface/src/reqrsp_test.sv
+  - target: test
+    files:
+      - hw/reqrsp_interface/test/axi_to_reqrsp_tb.sv
+      - hw/reqrsp_interface/test/reqrsp_demux_tb.sv
+      - hw/reqrsp_interface/test/reqrsp_idempotent_tb.sv
+      - hw/reqrsp_interface/test/reqrsp_mux_tb.sv
+      - hw/reqrsp_interface/test/reqrsp_to_axi_tb.sv
+
+  # mem_interface
+  - files:
+      - hw/mem_interface/src/mem_wide_narrow_mux.sv
+      - hw/mem_interface/src/mem_interface.sv
+  - target: simulation
+    files:
+      - hw/mem_interface/src/mem_test.sv
+  - target: test
+    files:
+      - hw/mem_interface/test/mem_wide_narrow_mux_tb.sv
+
+  # tcdm_interface
+  - files:
+      # Level 0
+      - hw/tcdm_interface/src/tcdm_interface.sv
+      # Level 1
+      - hw/tcdm_interface/src/axi_to_tcdm.sv
+      - hw/tcdm_interface/src/reqrsp_to_tcdm.sv
+      - hw/tcdm_interface/src/tcdm_mux.sv
+  - target: simulation
+    files:
+      - hw/tcdm_interface/src/tcdm_test.sv
+  - target: test
+    files:
+      - hw/tcdm_interface/test/reqrsp_to_tcdm_tb.sv
+      - hw/tcdm_interface/test/tcdm_mux_tb.sv
+
+  # snitch
+  - files:
+      # Level 0
+      - hw/snitch/src/snitch_pma_pkg.sv
+      - hw/snitch/src/riscv_instr.sv
+      - hw/snitch/src/csr_snax_def.sv
+      # Level 1
+      - hw/snitch/src/snitch_pkg.sv
+      # Level 2
+      - hw/snitch/src/snitch_regfile_ff.sv
+      - hw/snitch/src/snitch_lsu.sv
+      - hw/snitch/src/snitch_l0_tlb.sv
+  - target: not(disable_pmcs)
+    defines:
+      SNITCH_ENABLE_PERF:
+    files:
+      - hw/snitch/src/snitch.sv
+  # Disable the performance monitoring counters to save area.
+  - target: disable_pmcs
+    files:
+      - hw/snitch/src/snitch.sv
+  - target: test
+    files:
+      - hw/snitch/test/snitch_l0_tlb_tb.sv
+
+  # snitch_vm
+  - files:
+      - hw/snitch_vm/src/snitch_ptw.sv
+
+  # snitch_dma
+  - files:
+      # Level 0
+      - hw/snitch_dma/src/axi_dma_pkg.sv
+      # Level 1
+      - hw/snitch_dma/src/axi_dma_error_handler.sv
+      - hw/snitch_dma/src/axi_dma_perf_counters.sv
+      - hw/snitch_dma/src/axi_dma_twod_ext.sv
+      # Level 2:
+      - hw/snitch_dma/src/axi_dma_tc_snitch_fe.sv
+
+  # snitch_ipu
+  - files:
+      # Level 0
+      - hw/snitch_ipu/src/snitch_ipu_pkg.sv
+      # Level 1
+      - hw/snitch_ipu/src/snitch_ipu_alu.sv
+      # Level 2
+      - hw/snitch_ipu/src/snitch_int_ss.sv
+
+  # snitch_ssr
+  - files:
+      # Level 0
+      - hw/snitch_ssr/src/snitch_ssr_pkg.sv
+      - hw/snitch_ssr/src/snitch_ssr_switch.sv
+      - hw/snitch_ssr/src/snitch_ssr_credit_counter.sv
+      # Level 1
+      - hw/snitch_ssr/src/snitch_ssr_indirector.sv
+      - hw/snitch_ssr/src/snitch_ssr_intersector.sv
+      # Level 2
+      - hw/snitch_ssr/src/snitch_ssr_addr_gen.sv
+      # Level 3
+      - hw/snitch_ssr/src/snitch_ssr.sv
+      # Level 4
+      - hw/snitch_ssr/src/snitch_ssr_streamer.sv
+  - target: test
+    files:
+      # Level 0
+      - hw/snitch_ssr/test/fixture_ssr.sv
+      - hw/snitch_ssr/test/fixture_ssr_streamer.sv
+      # Level 1
+      - hw/snitch_ssr/test/tb_simple_ssr.sv
+      - hw/snitch_ssr/test/tb_simple_ssr_streamer.sv
+
+  # snitch_cluster
+  - files:
+      # Level 0
+      - hw/snitch_cluster/src/snitch_data_mem.sv
+      - hw/snitch_cluster/src/snitch_amo_shim.sv
+      - hw/snitch_cluster/src/snitch_cluster_peripheral/snitch_cluster_peripheral_reg_pkg.sv
+      - hw/snitch_cluster/src/snitch_cluster_peripheral/snitch_cluster_peripheral_reg_top.sv
+      - hw/snitch_cluster/src/snitch_cluster_peripheral/snitch_cluster_peripheral.sv
+      - hw/snitch_cluster/src/snitch_fpu.sv
+      - hw/snitch_cluster/src/snitch_sequencer.sv
+      - hw/snitch_cluster/src/snitch_tcdm_interconnect.sv
+      # Level 1
+      - hw/snitch_cluster/src/snitch_barrier.sv
+      - hw/snitch_cluster/src/snitch_fp_ss.sv
+      - hw/snitch_cluster/src/snitch_shared_muldiv.sv
+      # Level 2
+      - hw/snitch_cluster/src/snitch_cc.sv
+      - hw/snitch_cluster/src/snitch_clkdiv2.sv
+      # Level 3
+      - hw/snitch_cluster/src/snitch_hive.sv
+      # Level 4
+      - hw/snitch_cluster/src/snitch_cluster.sv
+
+  #---------------------------
+  # SNAX components
+  #---------------------------
+  - files:
+      - hw/snax_util/src/snax_csr_mux_demux.sv
+      - hw/snax_util/src/snax_acc_mux_demux.sv
+      - hw/snax_util/src/snax_intf_translator.sv
+
+  - target: sparse_interconnect
+    files:
+      - target/snitch_cluster/generated/SparseInterconnect.sv
+      - target/snitch_cluster/generated/sparse_interconnect_wrapper.sv
+
+  #---------------------------
+  # SNAX Accelerators
+  #---------------------------
+  # SNAX HWPE MAC
+  - target: snax_mac
+    files:
+      # Level 0
+      - hw/snax_hwpe_mac/src/snax_hwpe_ctrl.sv
+      - hw/snax_hwpe_mac/src/snax_hwpe_to_reqrsp.sv
+      # Level 1
+      - hw/snax_hwpe_mac/src/snax_mac_wrapper.sv
+
+  # SNAX ALU
+  - target: snax_alu
+    files:
+      # Level 0
+      - hw/snax_alu/src/snax_alu_csr.sv
+      - hw/snax_alu/src/snax_alu_pe.sv
+      - target/snitch_cluster/generated/snax_alu/snax_alu_reqrspman_ReqRspManager.sv
+      - target/snitch_cluster/generated/snax_alu/snax_alu_Streamer.sv
+      # Level 1
+      - hw/snax_alu/src/snax_alu_shell_wrapper.sv
+      - target/snitch_cluster/generated/snax_alu/snax_alu_csrman_wrapper.sv
+      - target/snitch_cluster/generated/snax_alu/snax_alu_streamer_wrapper.sv
+      # Level 2
+      - target/snitch_cluster/generated/snax_alu/snax_alu_wrapper.sv
+
+  # SNAX MX
+  - target: snax_mx_alu
+    files:
+      # Level 0
+      - hw/snax_mx_alu/source/PE_Array.sv
+      - hw/snax_mx_alu/source/PE_Array_wrapper.sv
+      - target/snitch_cluster/generated/snax_mx_alu/snax_mx_alu_reqrspman_ReqRspManager.sv
+      - target/snitch_cluster/generated/snax_mx_alu/snax_mx_alu_Streamer.sv
+      # Level 1
+      - hw/snax_mx_alu/source/snax_mx_alu_shell_wrapper.sv
+      - target/snitch_cluster/generated/snax_mx_alu/snax_mx_alu_csrman_wrapper.sv
+      - target/snitch_cluster/generated/snax_mx_alu/snax_mx_alu_streamer_wrapper.sv
+      # Level 2
+      - target/snitch_cluster/generated/snax_mx_alu/snax_mx_alu_wrapper.sv
+
+  - target: snax-exercise-alu
+    files:
+      # Level 0
+      - hw/snax_exercise/src/snax_exercise_csr.sv
+      - hw/snax_exercise/src/snax_exercise_pe.sv
+      - hw/snax_exercise/src/snax_exercise_top.sv
+      - target/snitch_cluster/generated/snax_exercise/snax_exercise_reqrspman_ReqRspManager.sv
+      - target/snitch_cluster/generated/snax_exercise/snax_exercise_Streamer.sv
+      # Level 1
+      - hw/snax_exercise/src/snax_exercise_shell_wrapper.sv
+      - target/snitch_cluster/generated/snax_exercise/snax_exercise_csrman_wrapper.sv
+      - target/snitch_cluster/generated/snax_exercise/snax_exercise_streamer_wrapper.sv
+      # Level 2
+      - target/snitch_cluster/generated/snax_exercise/snax_exercise_wrapper.sv
+
+  # Hypercorex
+  - target: hypercorex
+    files:
+      # Level 0
+      - target/snitch_cluster/generated/snax_hypercorex/snax_hypercorex_Streamer.sv
+      # Level 1
+      - hw/snax_hypercorex/snax_hypercorex_shell_wrapper.sv
+      - target/snitch_cluster/generated/snax_hypercorex/snax_hypercorex_streamer_wrapper.sv
+      # Level 2
+      - target/snitch_cluster/generated/snax_hypercorex/snax_hypercorex_wrapper.sv
+
+  # CGRA
+  - target: cgra
+    files:
+      # Level 0
+      - target/snitch_cluster/generated/snax_cgra/snax_cgra_reqrspman_ReqRspManager.sv
+      - target/snitch_cluster/generated/snax_cgra/snax_cgra_Streamer.sv
+      # Level 1
+      - hw/snax_cgra/src/snax_cgra_shell_wrapper.sv
+      - target/snitch_cluster/generated/snax_cgra/snax_cgra_csrman_wrapper.sv
+      - target/snitch_cluster/generated/snax_cgra/snax_cgra_streamer_wrapper.sv
+      # Level 2
+      - target/snitch_cluster/generated/snax_cgra/snax_cgra_wrapper.sv
+
+  # dimc
+  - target: dimc
+    files:
+      # Level 0
+      - target/snitch_cluster/generated/snax_dimc/snax_dimc_Streamer.sv
+      # Level 1
+      # TODO: implement this wrapepr file
+      - hw/snax_dimc/snax_dimc_shell_wrapper.sv
+      - target/snitch_cluster/generated/snax_dimc/snax_dimc_streamer_wrapper.sv
+      # Level 2
+      - target/snitch_cluster/generated/snax_dimc/snax_dimc_wrapper.sv
+
+  - target: snax_data_reshuffler
+    files:
+      # Level 0
+      - hw/chisel_acc/generated/reshuffle/Reshuffler.sv
+      - target/snitch_cluster/generated/snax_data_reshuffler/snax_data_reshuffler_reqrspman_ReqRspManager.sv
+      - target/snitch_cluster/generated/snax_data_reshuffler/snax_data_reshuffler_Streamer.sv
+      # Level 1
+      - target/snitch_cluster/generated/snax_data_reshuffler/snax_data_reshuffler_csrman_wrapper.sv
+      - target/snitch_cluster/generated/snax_data_reshuffler/snax_data_reshuffler_streamer_wrapper.sv
+      # Level 2
+      - hw/chisel_acc/src/snax_data_reshuffler_shell_wrapper.sv
+      - target/snitch_cluster/generated/snax_data_reshuffler/snax_data_reshuffler_wrapper.sv
+
+  - target: snax_versacore
+    files:
+      # Level 0
+      - target/snitch_cluster/generated/snax_versacore/VersaCore.sv
+      - target/snitch_cluster/generated/snax_versacore/snax_versacore_shell_wrapper.sv
+      - target/snitch_cluster/generated/snax_versacore/snax_versacore_reqrspman_ReqRspManager.sv
+      - target/snitch_cluster/generated/snax_versacore/snax_versacore_Streamer.sv
+      # Level 1
+      - target/snitch_cluster/generated/snax_versacore/snax_versacore_csrman_wrapper.sv
+      - target/snitch_cluster/generated/snax_versacore/snax_versacore_streamer_wrapper.sv
+      # Level 2
+      - target/snitch_cluster/generated/snax_versacore/snax_versacore_wrapper.sv
+
+  - target: snax_gemmX
+    files:
+      # Level 0
+      - hw/chisel_acc/generated/gemmx/BlockGemmRescaleSIMD.sv
+      - hw/chisel_acc/src/snax_streamer_gemmX_shell_wrapper.sv
+      - target/snitch_cluster/generated/snax_streamer_gemmX/snax_streamer_gemmX_reqrspman_ReqRspManager.sv
+      - target/snitch_cluster/generated/snax_streamer_gemmX/snax_streamer_gemmX_Streamer.sv
+      # Level 1
+      - target/snitch_cluster/generated/snax_streamer_gemmX/snax_streamer_gemmX_csrman_wrapper.sv
+      - target/snitch_cluster/generated/snax_streamer_gemmX/snax_streamer_gemmX_streamer_wrapper.sv
+      # Level 2
+      - target/snitch_cluster/generated/snax_streamer_gemmX/snax_streamer_gemmX_wrapper.sv
+
+  - target: snax_KUL_cluster_xdma
+    files:
+      # Level 0
+      - target/snitch_cluster/generated/snax_KUL_cluster_xdma/snax_KUL_cluster_xdma.sv
+      # Level 1
+      - target/snitch_cluster/generated/snax_KUL_cluster_xdma/snax_KUL_cluster_xdma_wrapper.sv
+
+  - target: snax_versacore_to_cluster_xdma
+    files:
+      # Level 0
+      - target/snitch_cluster/generated/snax_versacore_to_cluster_xdma/snax_versacore_to_cluster_xdma.sv
+      # Level 1
+      - target/snitch_cluster/generated/snax_versacore_to_cluster_xdma/snax_versacore_to_cluster_xdma_wrapper.sv
+
+  - target: snax_versacore_dse_cluster_xdma
+    files:
+      # Level 0
+      - target/snitch_cluster/generated/snax_versacore_dse_cluster_xdma/snax_versacore_dse_cluster_xdma.sv
+      # Level 1
+      - target/snitch_cluster/generated/snax_versacore_dse_cluster_xdma/snax_versacore_dse_cluster_xdma_wrapper.sv
+
+  - target: snax_xdma_cluster_xdma
+    files:
+      # Level 0
+      - target/snitch_cluster/generated/snax_xdma_cluster_xdma/snax_xdma_cluster_xdma.sv
+      # Level 1
+      - target/snitch_cluster/generated/snax_xdma_cluster_xdma/snax_xdma_cluster_xdma_wrapper.sv
+
+  - target: test
+    files:
+      - hw/snitch_cluster/test/snitch_tcdm_interconnect_tb.sv
+
+  # target/common
+  - target: any(simulation, verilator)
+    files:
+      - target/common/test/tb_memory_regbus.sv
+      - target/common/test/tb_memory_axi.sv
+  - target: test
+    files:
+      - target/common/test/tb_bin.sv
+
+  #---------------------------
+  # Cluster wrapper selections
+  #---------------------------
+  - target: snitch_cluster
+    files:
+      - target/snitch_cluster/generated/snitch_cluster_wrapper.sv
+  - target: snax_mac_cluster
+    files:
+      - target/snitch_cluster/generated/snax_mac_cluster_wrapper.sv
+  - target: snax_mac_mult_cluster
+    files:
+      - target/snitch_cluster/generated/snax_mac_mult_cluster_wrapper.sv
+  - target: snax_alu_cluster
+    files:
+      - target/snitch_cluster/generated/snax_alu_cluster_wrapper.sv
+  - target: snax_exercise_cluster
+    files:
+      - target/snitch_cluster/generated/snax_exercise_cluster_wrapper.sv
+  - target: snax_mx_cluster
+    files:
+      - target/snitch_cluster/generated/snax_mx_cluster_wrapper.sv
+  - target: snax_hypercorex_cluster
+    files:
+      - target/snitch_cluster/generated/snax_hypercorex_cluster_wrapper.sv
+  - target: snax_dimc_cluster
+    files:
+      - target/snitch_cluster/generated/snax_dimc_cluster_wrapper.sv
+  - target: snax_cgra_cluster
+    files:
+      - target/snitch_cluster/generated/snax_cgra_cluster_wrapper.sv
+  - target: snax_KUL_dse_cluster
+    files:
+      - target/snitch_cluster/generated/snax_KUL_dse_cluster_wrapper.sv
+  - target: snax_KUL_cluster
+    files:
+      - target/snitch_cluster/generated/snax_KUL_cluster_wrapper.sv
+
+  - target: snax_versacore_to_cluster
+    files:
+      - target/snitch_cluster/generated/snax_versacore_to_cluster_wrapper.sv
+
+  - target: snax_versacore_dse_cluster
+    files:
+      - target/snitch_cluster/generated/snax_versacore_dse_cluster_wrapper.sv
+
+  - target: snax_xdma_cluster
+    files:
+      - target/snitch_cluster/generated/snax_xdma_cluster_wrapper.sv
+  #---------------------------
+  # Test harness declaration
+  #---------------------------
+  - target: snax_test_harness
+    files:
+      - target/snitch_cluster/test/testharness.sv

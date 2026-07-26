@@ -1,0 +1,25 @@
+{
+    //array_shape: 1
+    //data_type: 0
+    K: 1024
+    N: 32
+    M: 32
+    parfor_M: 4
+    parfor_N: 16
+    parfor_K: 4
+    block_size: 16
+    A_dtype: "fp6_e2m3"
+    B_dtype: "mxint8"
+    //0:fp32, 1:bf16, 2: e5m2, 3: e4m3, 4:mxint8, 5: e3m2, 6: e2m3
+    quantize_mode: 4
+    shared_format: 4
+    stationary: 0
+    // use_hw_gemm: 0 = matmul on dequantized values (fast, software reference)
+    //              1 = hw_snax_gemm (hardware-accurate BFP_PE simulation)
+    use_hw_gemm: 0
+    //quantization_enable: 0
+    //channel_en_C: 1
+    //stationary: 2
+    //transposed_A: 0
+    //transposed_B: 0
+}

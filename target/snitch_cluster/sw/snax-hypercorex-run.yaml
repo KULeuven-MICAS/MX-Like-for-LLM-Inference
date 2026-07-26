@@ -1,0 +1,18 @@
+# Copyright 2024 KU Leuven.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+# Ryan Antonio <ryan.antonio@esat.kuleuven.be>
+
+
+runs:
+  - elf: apps/snax-hypercorex/test-csr/build/test-csr.elf
+  - elf: apps/snax-hypercorex/high-dim-bind/build/high-dim-bind.elf
+  - elf: apps/snax-hypercorex/am-search/build/am-search.elf
+  - elf: apps/snax-hypercorex/isolet-recog/build/isolet-recog.elf
+  - elf: apps/snax-hypercorex/vec-compress/build/vec-compress.elf
+  - elf: apps/snax-hypercorex/char-recog/build/char-recog.elf
+  - elf: apps/snax-hypercorex/digit-recog/build/digit-recog.elf
+  - elf: apps/snax-hypercorex/ucihar-recog/build/ucihar-recog.elf
+  - elf: apps/snax-hypercorex/dna-recog/build/dna-recog.elf
+  - elf: apps/snax-hypercorex/lang-recog/build/lang-recog.elf

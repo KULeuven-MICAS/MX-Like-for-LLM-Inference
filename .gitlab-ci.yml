@@ -1,0 +1,131 @@
+# Copyright 2023 ETH Zurich and University of Bologna.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+variables:
+  GIT_STRATEGY: clone
+  GIT_SUBMODULE_STRATEGY: recursive
+  # Enable colors in CI terminal
+  TERM: ansi
+  FORCE_COLOR: 1
+  # Configure environment
+  PYTHON: /usr/local/anaconda3-2022.05/bin/python3
+  BENDER: bender-0.27.1
+  CC: gcc-9.2.0
+  CXX: g++-9.2.0
+  VCS_SEPP: vcs-2020.12
+  VERILATOR_SEPP: verilator-4.110
+  QUESTA_SEPP: questa-2022.3
+  LLVM_BINROOT: /usr/pack/riscv-1.0-kgf/pulp-llvm-0.12.0/bin
+  CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: /usr/pack/gcc-9.2.0-af/linux-x64/bin/gcc
+  LLVM_SYS_120_PREFIX: /usr/pack/llvm-12.0.1-af
+  CMAKE: cmake-3.18.1
+
+before_script:
+  - $PYTHON -m venv .venv
+  - source .venv/bin/activate
+  - pip install -r python-requirements.txt
+  - $BENDER vendor init
+
+##############
+# Build docs #
+##############
+
+docs:
+  script:
+    - make docs
+
+#################################
+# Build Snitch cluster software #
+#################################
+
+snitch-cluster-sw:
+  script:
+    - cd target/snitch_cluster
+    - make sw
+  artifacts:
+    paths:
+      - sw/math/include/bits/alltypes.h
+      - target/snitch_cluster/sw/**/build/*.elf
+    expire_in: 1 day
+
+snitch-cluster-sw-banshee:
+  script:
+    - cd target/snitch_cluster
+    - make SELECT_RUNTIME=banshee sw
+  artifacts:
+    paths:
+      - sw/math/include/bits/alltypes.h
+      - target/snitch_cluster/sw/**/build/*.elf
+    expire_in: 1 day
+
+#######################
+# Standalone IP tests #
+#######################
+
+# Build and run all individual IP testbenches.
+# Currently missing IP tests:
+# - snitch_vm
+# - snitch_ipu
+# - snitch_dma
+# - snitch
+# Currently failing IP tests/scripts:
+# - reqrsp_interface
+# - snitch_ssr
+snitch-ip-tests:
+  needs: []
+  parallel:
+    matrix:
+      - IP:
+          - mem_interface
+          - snitch_cluster
+          - snitch_icache
+          - tcdm_interface
+  script:
+    - cd hw/$IP
+    - ./util/compile.sh
+    - ./util/run_vsim.sh
+
+########################
+# Snitch cluster tests #
+########################
+
+# Verilator
+snitch-cluster-vlt:
+  needs: [snitch-cluster-sw]
+  script:
+    - cd target/snitch_cluster
+    - make bin/snitch_cluster.vlt
+    - ./run.py sw/run.yaml --simulator verilator -j --run-dir runs/vlt
+
+# VCS
+snitch-cluster-vcs:
+  needs: [snitch-cluster-sw]
+  script:
+    - cd target/snitch_cluster
+    - make bin/snitch_cluster.vcs
+    - ./run.py sw/run.yaml --simulator vcs -j --run-dir runs/vcs
+
+# Questa
+snitch-cluster-vsim:
+  needs: [snitch-cluster-sw]
+  script:
+    - cd target/snitch_cluster
+    - make bin/snitch_cluster.vsim
+    - ./run.py sw/run.yaml --simulator vsim -j --run-dir runs/vsim
+
+# Banshee
+snitch-cluster-banshee:
+  needs: [snitch-cluster-sw-banshee]
+  variables:
+    SNITCH_LOG: info
+  script:
+    - rustup install 1.63.0
+    - rustup override set 1.63.0
+    - rustc --version
+    - rustup --version
+    - git clone git@github.com:pulp-platform/banshee.git --recurse-submodules
+    - cd banshee
+    - cargo install --debug --path .
+    - cd ../target/snitch_cluster
+    - ./run.py sw/run.yaml --simulator banshee -j --run-dir runs/banshee

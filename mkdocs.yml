@@ -1,0 +1,69 @@
+# Copyright 2020 ETH Zurich and University of Bologna.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+site_name: SNAX Cluster
+theme:
+  name: material
+
+  icon:
+    repo: fontawesome/brands/github
+
+repo_url: https://github.com/KULeuven-MICAS/snitch_cluster/
+repo_name: KULeuven-MICAS/snitch_cluster
+
+markdown_extensions:
+  - admonition
+  - def_list
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+plugins:
+  - include-markdown
+  - macros:
+      on_error_fail: true
+use_directory_urls: false
+extra:
+  repo: snitch_cluster
+  branch: main
+nav:
+  - Home: index.md
+  - User Guide:
+      - Getting Started: ug/getting_started.md
+      - Repository Structure: ug/directory_structure.md
+      - Documentation: ug/documentation.md
+      # Remove
+      # - Benchmarking: ug/benchmarking.md
+      # - Trace Example: ug/example_trace.html
+  - Reference Manual:
+      - Hardware:
+          - Snitch: rm/snitch.md
+          - Snitch Cluster:
+              - Overview: rm/snitch_cluster.md
+              - Peripherals: rm/peripherals.md
+              - Schema: schema-doc/snitch_cluster.md
+          - SNAX Cluster: rm/snax_cluster.md
+          - Reqrsp Interface: rm/reqrsp_interface.md
+          - Custom Instructions: rm/custom_instructions.md
+          # - Solder: rm/solder.md
+      # Note: These are non-existent in the original repo...
+      # - Software:
+      #     - Pages: runtime/Pages/index.md
+      #     - Files: runtime/Files/index.md
+      #     - Classes: runtime/Classes/index.md
+      #     - Examples: runtime/Examples/index.md
+      #     - Modules: runtime/Modules/index.md
+      #     - Namespaces: runtime/Namespaces/index.md
+  - SNAX Tutorial:
+      - Introduction: tutorial/introduction.md
+      - Architectural Overview: tutorial/architectural_overview.md
+      - 1. Accelerator Design: tutorial/accelerator_design.md
+      - 2. CSR Manager Design: tutorial/csrman_design.md
+      - 3. Streamer Design: tutorial/streamer_design.md
+      - 4. Building the System: tutorial/build_system.md
+      - 5. Programming the System: tutorial/programming.md
+      - Other Tools: tutorial/other_tools.md
+      - Summary and Exercise: tutorial/summary_and_exercise.md
+  - Publications: publications.md

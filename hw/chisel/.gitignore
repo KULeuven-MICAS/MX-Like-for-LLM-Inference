@@ -1,0 +1,10 @@
+project/*
+!project/plugins.sbt
+!project/build.properties
+generated
+target
+out
+
+# Files
+src/main/scala/snax/reqRspManager/ReqRspManagerParamGen.scala
+src/main/scala/snax/streamer/StreamParamGen.scala

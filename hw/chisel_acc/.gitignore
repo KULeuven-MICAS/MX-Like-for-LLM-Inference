@@ -1,0 +1,8 @@
+project/*
+!project/plugins.sbt
+!project/build.properties
+target
+out
+
+# Files
+src/snax_streamer_gemmX_shell_wrapper.sv
