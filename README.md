@@ -3,7 +3,7 @@
 
 # Overview
 
-This repository hosts the hardware and base software for paper MX-like Tensor Core for LLM Inference with NPU Integration via Hardware-Software Co-design Exploration. This work is based on SNAX, a high-efficiency compute cluster platform designed for multi-accelerator development. It provides a standard SNAX shell for conveniently integrating versatile accelerators. Moreover, it contains a variety of accelerators that are available for use. More details available on [KULeuven-MICAS/snax_cluster](https://github.com/KULeuven-MICAS/snax_cluster).
+This repository hosts the hardware and base software for the paper *"MX-like Tensor Core for LLM Inference with NPU Integration via Hardware-Software Co-design Exploration"*. This work is based on SNAX, a high-efficiency compute cluster platform designed for multi-accelerator development. It provides a standard SNAX shell for conveniently integrating versatile accelerators. Moreover, it contains a variety of accelerators that are available for use. More details available on [KULeuven-MICAS/snax_cluster](https://github.com/KULeuven-MICAS/snax_cluster).
 
 
 <!-- SNAX supports several design-time and run-time configurations to support a variety of accelerators. For example, some design-time configurations include customizing the memory sizes, the interconnect structure connecting the accelerators to memory, the number of Snitch cores controlling accelerators, and so much more. For run-time configurations, we provide data streamers and reshufflers to aid accelerators in organizing data layouts in memory and managing data access patterns.
@@ -24,7 +24,8 @@ The file tree is visualized as follows:
 │   │   └── streamer
 │   ├── snax_accelerator_1
 │   ├── snax_accelerator_2
-│   ├── mx_like_tensor_core(Ours)
+│   ├── mx_like_tensor_core(Ours)   
+│   ├── snax_mx_alu(Ours, wrappers)
 │   ├── snitch_stuff
 │   └── templates
 ├── sw
@@ -35,12 +36,12 @@ The file tree is visualized as follows:
 │       └── sw
 │           ├── apps
 │           │   ├── snax_system_1
-│           │   └── snax_system_2
+│           │   ├── snax_system_2
 │           │   └── snax_mx(Ours)
 │           └── snax_lib 
 │               ├── snax_system_1
-│               └── snax_system_2
-│           │   └── snax_mx(Ours)
+│               ├── snax_system_2
+│               └── snax_mx(Ours)
 └── util
     ├── clustergen
     └── wrappergen
@@ -87,13 +88,13 @@ git submodule update --init --recursive
 docker pull ghcr.io/kuleuven-micas/snax:main
 ```
 
-3 ) Start the container, we recommend to run it in Linux and WSL:
+3 ) Start the container (we use Podman below, but Docker works equivalently), we recommend to run it in Linux and WSL:
 
 ```bash
 podman run -it -v `pwd`:/repo -w /repo ghcr.io/kuleuven-micas/snax:main
 ```
 
-Alternatively, you can use map the real path of your working `snax_cluster` directory:
+Alternatively, you can map the real path of your working `snax_cluster` directory:
 
 ```bash
 podman run -it -v `pwd`:`pwd` -w `pwd` ghcr.io/kuleuven-micas/snax:main
@@ -109,7 +110,7 @@ make -C target/snitch_cluster CFG_OVERRIDE=cfg/snax_mx_cluster.hjson rtl-gen
 
 All the generated components can be found under `snax_cluster/target/snitch_cluster/generated/.`
 
-In here and below, you can replace snax_mx_cluster.hjson with your own settings.
+Here and in subsequent steps, replace snax_mx_cluster.hjson with your own configuration file.
 
 5 ) Build the HW. The `-j` option parallelizes the build. The command below builds a Verilator binary for simulation. Before running this command, you should check Bender.yml to make sure all needed RTL are in the settings.
 
@@ -127,7 +128,7 @@ make -C target/snitch_cluster CFG_OVERRIDE=cfg/snax_mx_cluster.hjson sw -j
 7 ) Run the built SW of the accelerator on the built Verilator binary. The `--vcd` is optional to dump a vcd file to be viewed with `gtkwave`. A `sim.vcd` file gets dump from where you ran the command.
 
 ```bash
-./target/snitch_cluster/bin/snitch_cluster.vlt ./target/snitch_cluster/sw/apps/snax-alu/build/snax-mx.elf --vcd
+./target/snitch_cluster/bin/snitch_cluster.vlt ./target/snitch_cluster/sw/apps/snax-mx/build/snax-mx.elf --vcd
 ```
 
 You should see a log like:
@@ -152,10 +153,14 @@ gtkwave sim.vcd
 
 PS: note that the --vcd may slow down the process. And if you are using printf to debug, the vcd file might be several GBs depending on the workload.
 
+### LLM benchmark
+LLM benchmark can be found under `./target/snitch_cluster/sw/apps/snax-mx/accuracy_test`. It is recommended to use [NVIDIA pytorch docker](https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/running.html). 
 
 # Publications
 [TBD]  
 
 # Acknowledgement
-[TBD]
+
 SNAX is an extension of the original [Snitch Cluster](https://github.com/pulp-platform/snitch_cluster) framework. SNAX got its name as "SNitch Acceleration eXtension".
+
+[TBD]
