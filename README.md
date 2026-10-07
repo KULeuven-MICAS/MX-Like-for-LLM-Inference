@@ -1,9 +1,10 @@
-<!-- ![CI](https://github.com/KULeuven-MICAS/snax_cluster/actions/workflows/ci.yml/badge.svg)-->
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-# Overview
+# MX-like Tensor Core for LLM Inference
 
-This repository hosts the hardware and base software for the paper *"MX-like Tensor Core for LLM Inference with NPU Integration via Hardware-Software Co-design Exploration"*. This work is based on SNAX, a high-efficiency compute cluster platform designed for multi-accelerator development. It provides a standard SNAX shell for conveniently integrating versatile accelerators. Moreover, it contains a variety of accelerators that are available for use. More details available on [KULeuven-MICAS/snax_cluster](https://github.com/KULeuven-MICAS/snax_cluster).
+## Overview
+
+This repository contains the hardware and base software accompanying the paper *"MX-like Tensor Core for LLM Inference with NPU Integration via Hardware-Software Co-Design Exploration"*. This work builds on SNAX, a high-efficiency compute cluster platform designed for multi-accelerator development. SNAX provides a standard shell for integrating a variety of accelerators. For more information about the underlying platform, see [KULeuven-MICAS/snax_cluster](https://github.com/KULeuven-MICAS/snax_cluster).
 
 
 <!-- SNAX supports several design-time and run-time configurations to support a variety of accelerators. For example, some design-time configurations include customizing the memory sizes, the interconnect structure connecting the accelerators to memory, the number of Snitch cores controlling accelerators, and so much more. For run-time configurations, we provide data streamers and reshufflers to aid accelerators in organizing data layouts in memory and managing data access patterns.
@@ -24,8 +25,8 @@ The file tree is visualized as follows:
 │   │   └── streamer
 │   ├── snax_accelerator_1
 │   ├── snax_accelerator_2
-│   ├── mx_like_tensor_core(Ours)   
-│   ├── snax_mx_alu(Ours, wrappers)
+│   ├── mx_like_tensor_core
+│   ├── snax_mx_alu
 │   ├── snitch_stuff
 │   └── templates
 ├── sw
@@ -37,20 +38,26 @@ The file tree is visualized as follows:
 │           ├── apps
 │           │   ├── snax_system_1
 │           │   ├── snax_system_2
-│           │   └── snax_mx(Ours)
-│           └── snax_lib 
+│           │   └── snax-mx
+│           └── snax
 │               ├── snax_system_1
 │               ├── snax_system_2
-│               └── snax_mx(Ours)
-└── util
-    ├── clustergen
-    └── wrappergen
+│               └── snax-mx
+├── util
+│   ├── clustergen
+│   └── wrappergen
+└── docs
 ```
+
+The MX-specific components introduced by this work are located in
+`hw/mx_like_tensor_core`, `hw/snax_mx_alu`,
+`target/snitch_cluster/sw/apps/snax-mx`, and
+`target/snitch_cluster/sw/snax/snax-mx`.
 
 The top-level is structured as follows:
 
-* `docs`: [Documentation](documentation.md) of the generator and software.
-  Contains additional user guides.
+* `docs`: Project documentation and additional user guides.
+  See the [documentation index](docs/index.md).
 * `hw`: All hardware IP components. The source files are either specified by SystemVerilog, Chisel, or a template to generate these files.
 * `sw`: Hardware independent software, libraries, runtimes, etc.
 * `target`: Contains the testbench setup, cluster configuration specific hardware and software, libraries, runtimes, etc.
@@ -58,74 +65,79 @@ The top-level is structured as follows:
 
 ## Getting Started
 
-### Detailed Guides of SNAX cluster
-It is recommended to go through the SNAX guide first, as the co-design flow is built upon it. It is also very helpful to finish the small exercise at the end of the below tutorial. 
+### Detailed Guides for the SNAX Cluster
 
-There is a detailed [getting started guide](https://kuleuven-micas.github.io/snax_cluster/ug/getting_started.html) that contains several information about installation and directory setup.
+We recommend reading the SNAX guide first because this co-design flow builds on the SNAX platform. The exercise at the end of the tutorial provides a useful introduction to the accelerator integration flow.
 
-There is a [detailed tutorial](https://kuleuven-micas.github.io/snax_cluster/tutorial/introduction.html) on integrating a custom accelerator into the SNAX cluster platform. 
+The [getting started guide](https://kuleuven-micas.github.io/snax_cluster/ug/getting_started.html) provides information about installation and repository setup.
 
+The [accelerator integration tutorial](https://kuleuven-micas.github.io/snax_cluster/tutorial/introduction.html) explains how to integrate a custom accelerator into the SNAX cluster platform.
 
 ### Workflow
 
-As a quick start, it is recommended to download SNAX pre-built docker container.
+For a quick start, we recommend using the pre-built SNAX Docker container.
 
-1 ) Clone the repository and go inside it after:
+1. Clone the repository and enter the project directory:
 
-``` bash
-git clone https://github.com/KULeuven-MICAS/snax_cluster.git --recurse-submodules
+```bash
+git clone --recurse-submodules \
+  https://github.com/MargZhao/MX-like-Tensor-Core-for-LLM-Inference-with-NPU-Integration-via-HW-SW-Co-Design-Exploration.git \
+  snax-mx
+cd snax-mx
 ```
+<!-- TODO(RELEASE MAINTAINER):
+Replace the GitHub clone URL with the final institutional repository URL.
+-->
 
-Note: If you cloned the repository already but without the recursed submodules, update the summodules inside the repository:
+If the repository was cloned without its submodules, initialize them with:
 
 ```bash
 git submodule update --init --recursive
 ```
 
-2 ) Download the docker:
+2. Pull the Docker image:
 
-``` bash
+```bash
 docker pull ghcr.io/kuleuven-micas/snax:main
 ```
 
-3 ) Start the container (we use Podman below, but Docker works equivalently), we recommend to run it in Linux and WSL:
+3. Start the container from the repository root. Linux and WSL are the recommended environments:
 
 ```bash
-podman run -it -v `pwd`:/repo -w /repo ghcr.io/kuleuven-micas/snax:main
+docker run --rm -it \
+  -v "$(pwd):/repo" \
+  -w /repo \
+  ghcr.io/kuleuven-micas/snax:main
 ```
 
-Alternatively, you can map the real path of your working `snax_cluster` directory:
+To use Podman instead, replace `docker` with `podman` in both commands above.
 
-```bash
-podman run -it -v `pwd`:`pwd` -w `pwd` ghcr.io/kuleuven-micas/snax:main
-```
+4. Use the provided MX cluster configuration at
+`target/snitch_cluster/cfg/snax_mx_cluster.hjson`.
 
-4 ) Generate all RTL files of your chosen accelerator. First, configure your own accelerator and SNAX components under `snax_cluster/target/snitch_cluster/cfg/{your_accelerator}.hjson.` In this work, this file is auto-generated.
-
-Then, run the below command to generate RTL: 
+Generate the RTL files from the repository root:
 
 ```bash
 make -C target/snitch_cluster CFG_OVERRIDE=cfg/snax_mx_cluster.hjson rtl-gen
 ```
 
-All the generated components can be found under `snax_cluster/target/snitch_cluster/generated/.`
+The generated components are placed under `target/snitch_cluster/generated/`.
 
-Here and in subsequent steps, replace snax_mx_cluster.hjson with your own configuration file.
+To use a custom configuration, place it under `target/snitch_cluster/cfg/` and replace `snax_mx_cluster.hjson` in the commands below with the corresponding file name.
 
-5 ) Build the HW. The `-j` option parallelizes the build. The command below builds a Verilator binary for simulation. Before running this command, you should check Bender.yml to make sure all needed RTL are in the settings.
+5. Build the hardware. The `-j` option parallelizes the build. The command below builds a Verilator binary for simulation. When using a custom accelerator, ensure that all required RTL sources are listed in `Bender.yml`.
 
 ```bash
 make -C target/snitch_cluster CFG_OVERRIDE=cfg/snax_mx_cluster.hjson bin/snitch_cluster.vlt -j
 ```
 
-
-6 ) Build the SW. The `-j` option parallelizes the build.
+6. Build the software. The `-j` option parallelizes the build.
 
 ```bash
 make -C target/snitch_cluster CFG_OVERRIDE=cfg/snax_mx_cluster.hjson sw -j
 ```
 
-7 ) Run the built SW of the accelerator on the built Verilator binary. The `--vcd` is optional to dump a vcd file to be viewed with `gtkwave`. A `sim.vcd` file gets dump from where you ran the command.
+7. Run the accelerator software on the Verilator simulator. The optional `--vcd` flag generates a `sim.vcd` waveform file in the current directory for inspection with GTKWave.
 
 ```bash
 ./target/snitch_cluster/bin/snitch_cluster.vlt ./target/snitch_cluster/sw/apps/snax-mx/build/snax-mx.elf --vcd
@@ -133,13 +145,14 @@ make -C target/snitch_cluster CFG_OVERRIDE=cfg/snax_mx_cluster.hjson sw -j
 
 You should see a log like:
 
-```bash
+```text
 VCD wave generation enabled
 [fesvr] Wrote 36 bytes of bootrom to 0x1000
 [fesvr] Wrote entry point 0x80000000 to bootloader slot 0x1020
 [fesvr] Wrote 72 bytes of bootdata to 0x1024
 [Tracer] Logging Hart          0 to logs/trace_chip_00_hart_00000.dasm
 [Tracer] Logging Hart          1 to logs/trace_chip_00_hart_00001.dasm
+[some debug infos...]
 Accelerator Done! 
 Accelerator Cycles: xx 
 Number of errors: x 
@@ -151,16 +164,55 @@ You can view the waveform with:
 gtkwave sim.vcd
 ```
 
-PS: note that the --vcd may slow down the process. And if you are using printf to debug, the vcd file might be several GBs depending on the workload.
+> **Note:** VCD generation can significantly slow down the simulation. When extensive `printf` debugging is enabled, the waveform file may grow to several gigabytes, depending on the workload.
 
-### LLM benchmark
-LLM benchmark can be found under `./target/snitch_cluster/sw/apps/snax-mx/accuracy_test`. It is recommended to use [NVIDIA pytorch docker](https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/running.html). 
+### LLM Benchmark Example
 
-# Publications
-[TBD]  
+A simple LLM benchmark example is provided under
+`target/snitch_cluster/sw/apps/snax-mx/accuracy_test/`.
 
-# Acknowledgement
+## Publications
+
+This work has been accepted for publication at the
+[32nd Asia and South Pacific Design Automation Conference
+(ASP-DAC 2027)](https://www.aspdac.com/aspdac2027/):
+
+Z. Zhao, R. Ao, S. Cuyckens, M. Verhelst, C. Fang,
+“MX-like Tensor Core for LLM Inference with NPU Integration via
+Hardware-Software Co-Design Exploration,” *ASP-DAC*, 2027 (to appear).
+
+If you use this repository in your research or build upon this work,
+please cite the following paper:
+
+```bibtex
+@inproceedings{zhao2027mx,
+  author    = {Zhao, Zijun and Ao, Ruichu and Cuyckens, Stef and
+               Verhelst, Marian and Fang, Chao},
+  title     = {{MX-like Tensor Core for LLM Inference with NPU Integration
+               via Hardware-Software Co-Design Exploration}},
+  booktitle = {Proceedings of the 32nd Asia and South Pacific Design
+               Automation Conference (ASP-DAC)},
+  year      = {2027},
+  note      = {To appear}
+}
+```
+
+<!-- TODO(RELEASE MAINTAINER):
+Replace the preliminary citation above with the final publication record
+after the ASP-DAC 2027 proceedings become available. Add the DOI, page
+numbers, and proceedings URL, and remove the "To appear" note.
+-->
+
+## Acknowledgements
 
 SNAX is an extension of the original [Snitch Cluster](https://github.com/pulp-platform/snitch_cluster) framework. SNAX got its name as "SNitch Acceleration eXtension".
 
-[TBD]
+<!-- TODO(RELEASE MAINTAINER):
+Add project-specific acknowledgements and funding information before release.
+-->
+
+
+> **Release maintainer note:** Before publishing this project to the
+> institutional repository, update all repository-specific URLs, including
+> the clone URL, badges, documentation links, and publication metadata.
+> Remove this note after completing the institutional release.
