@@ -1,23 +1,28 @@
+// Copyright 2026 KU Leuven.
+// Solderpad Hardware License, Version 0.51, see LICENSE for details.
+// SPDX-License-Identifier: SHL-0.51
+
+// Author: Ruichu Ao <ruichuao@gmail.com>
+
 package mx
 
 import chisel3._
 import mx.mac._
 import mx.requant.{RequantConfig, RequantFP8, RequantINT8Config, RequantINT8, RequantBF16}
 
-/**
- * 通过命令行参数控制 FusedDotProductUnit 生成。
+/** Generates a FusedDotProductUnit from command-line options.
  *
- * 用法（通过 sbt）：
+ * Usage:
  *   sbt "runMain mx.GenerateFusedDotProduct --type-a E5M2 --type-b E4M3 --scale UE8M0 --vec 16 --out-dir generated/fused_dot"
  *
- * 参数（全部可选，有默认值）：
- *   --type-a  <name>   元素类型 A，默认 E5M2
- *   --type-b  <name>   元素类型 B，默认 E5M2
- *   --scale   <name>   共享 Scale 格式，默认 UE8M0
- *   --vec     <int>    向量宽度（并行 MAC 数），默认 8
- *   --out-dir <path>   输出目录，默认自动生成路径
+ * Options:
+ *   --type-a  <name>   Input A format (default: E5M2)
+ *   --type-b  <name>   Input B format (default: E5M2)
+ *   --scale   <name>   Shared-scale format (default: UE8M0)
+ *   --vec     <int>    Parallel MAC count (default: 8)
+ *   --out-dir <path>   Output directory (default: generated path)
  *
- * 合法值：
+ * Valid formats:
  *   type-a / type-b : INT8 E5M2 E4M3 E3M2 E2M3 E2M1
  *   scale           : UE8M0 UE7M1 UE6M2 UE5M3 UE4M4 UE3M5 UE2M6
  */

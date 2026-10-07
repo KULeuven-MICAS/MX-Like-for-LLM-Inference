@@ -1,3 +1,9 @@
+// Copyright 2026 KU Leuven.
+// Solderpad Hardware License, Version 0.51, see LICENSE for details.
+// SPDX-License-Identifier: SHL-0.51
+
+// Author: Ruichu Ao <ruichuao@gmail.com>
+
 package mx.mac
 
 import chisel3._
@@ -56,7 +62,7 @@ class FusedDotProductUnit(val scfg: ScaleAddConfig, val vectorSize: Int, val ist
     val accOut   = Output(UInt(32.W))
 
     // ============================================================
-    // 专门为 Trace 增加的测试端口 (仅观察 Lane 0)
+    // Optional trace ports.
     // ============================================================
     val debug = if (istest) Some(new Bundle {
       val all_lanes_fp32    = Output(Vec(vectorSize, UInt(32.W)))
@@ -89,7 +95,7 @@ class FusedDotProductUnit(val scfg: ScaleAddConfig, val vectorSize: Int, val ist
 
     laneResults(i) := conv.io.out
 
-    // 只有在测试模式下连接调试信号
+    // Connect debug signals in test mode.
     io.debug.foreach { d =>
       d.all_lanes_fp32(i)    := conv.io.out
       d.all_lanes_sa_mant(i) := sa.io.outMant

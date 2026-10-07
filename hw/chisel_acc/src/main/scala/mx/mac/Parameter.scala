@@ -1,3 +1,9 @@
+// Copyright 2026 KU Leuven.
+// Solderpad Hardware License, Version 0.51, see LICENSE for details.
+// SPDX-License-Identifier: SHL-0.51
+
+// Author: Ruichu Ao <ruichuao@gmail.com>
+
 package mx.mac
 
 case class ElementType(
@@ -28,25 +34,25 @@ case class OperatorConfig(
 ){
     // add implicit bit +1 
     private def getExtendedMantWidth(t: ElementType): Int = {
-        t.elementWidthMant + 1 // 加上隐式位
+        t.elementWidthMant + 1 // Include the implicit bit
     }
     // minimum exponent for this element format(include implicit scale -6 for INT8)
     private def minAdjExp(t: ElementType): Int = {
         if (t.elementWidthExp == 0) t.implicitScaleExp //for INT8. exp=0,so worst case is only -6
         else (1 - t.bias) + t.implicitScaleExp  // for other cases, they are always subnormal (1-bias)
     }
-    // 容纳负值 v 所需的 SInt 位宽
+    // Signed width for negative v.
     private def sIntBitsForNeg(v: Int): Int =
-        if (v >= 0) 1 else BigInt(-v).bitLength + 2 //负数-v 需要bitLength(-v)+1(sign), 1bit for overflow
+        if (v >= 0) 1 else BigInt(-v).bitLength + 2 // Sign and overflow bits
 
     val maxElementExp = elementTypeA.elementWidthExp max elementTypeB.elementWidthExp
     private val minSumAdjExp = minAdjExp(elementTypeA) + minAdjExp(elementTypeB)
     val resOperatorExpWidth = (maxElementExp + 2) max sIntBitsForNeg(minSumAdjExp)
-    //指数相加： expenent output width
+    // Exponent-sum width.
     //upper bound max of two exp element , + 2 for overflow 
-    //lower bound: 两个最小指数相加，
+    // Lower bound is the sum of minimum exponents.
     val resOperatorMantWidth = getExtendedMantWidth(elementTypeA) + getExtendedMantWidth(elementTypeB)
-    //尾数相乘： 两个尾数位宽直接相加，不用考虑溢出
+    // Product width is the sum of mantissa widths.
 }
 
 case class ScaleAddConfig(
@@ -54,16 +60,16 @@ case class ScaleAddConfig(
     elementTypeB: ElementType,
     stype: ScaleType
 ){
-    // 定义内部函数来计算扩展后的尾数位宽
+    // Extended mantissa width.
     //For Element
     private def getExtendedMantWidth(t: ElementType): Int = {
-         t.elementWidthMant + 1 // 加上隐式位
+         t.elementWidthMant + 1 // Include the implicit bit
     }
     //For Scale
     private def getScaleMantWidth(s: ScaleType): Int = {
         if (s.mantScaleWidth == 0) 1 else s.mantScaleWidth + 1
     }
-    // 计算每种格式的最小调整指数（含隐含缩放）
+    // Minimum adjusted exponent, including implicit scale.
     private def minAdjExp(t: ElementType): Int = {
         if (t.elementWidthExp == 0) t.implicitScaleExp
         else (1 - t.bias) + t.implicitScaleExp

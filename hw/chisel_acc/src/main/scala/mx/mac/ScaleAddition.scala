@@ -1,3 +1,9 @@
+// Copyright 2026 KU Leuven.
+// Solderpad Hardware License, Version 0.51, see LICENSE for details.
+// SPDX-License-Identifier: SHL-0.51
+
+// Author: Ruichu Ao <ruichuao@gmail.com>
+
 package mx.mac
 
 import chisel3._
@@ -38,11 +44,10 @@ class ScaleAddition(val scfg: ScaleAddConfig) extends Module {
   val(expScaleA,fullMantScaleA) = getScaledParts(io.inShareScaleA,scfg.stype)
   val(expScaleB,fullMantScaleB) = getScaledParts(io.inShareScaleB,scfg.stype)
 
-  //扩展位宽防止溢出
+  // Use signed bias arithmetic.
   val safeBias = scfg.stype.bias.S
 
-  // 次正规数 scale（exp=0 且有 mantissa 位）的指数应为 1-bias，而非 0-bias，
-  // 与 CustomOperator 对次正规数元素的处理保持一致。
+  // Subnormal scales use 1 - bias, matching CustomOperator.
   val adjExpScaleA = Mux(expScaleA === 0.U && scfg.stype.mantScaleWidth.U > 0.U,
                          1.S - safeBias,
                          expScaleA.zext - safeBias)
@@ -80,7 +85,7 @@ object OperatorWithScaleMain extends App {
 }
 
 object AllOperatorWithScaleMain extends App{
-  // 遍历所有 A 和 B 的组合 (嵌套循环)
+  // Generate all format pairs.
   for {
     typeA <- MXFormats.allElementTypes
     typeB <- MXFormats.allElementTypes
@@ -88,7 +93,7 @@ object AllOperatorWithScaleMain extends App{
     val currentCfg = OperatorConfig(typeA, typeB)
     val dirName = s"generated/${typeA.name}_${typeB.name}"
     
-    println(s"正在为 ${typeA.name} x ${typeB.name} 生成硬件...")
+    println(s"Generating ${typeA.name} x ${typeB.name} hardware...")
     
     emitVerilog(
       new CustomOperator(currentCfg), 

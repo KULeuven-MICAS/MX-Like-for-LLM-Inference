@@ -1,3 +1,9 @@
+// Copyright 2026 KU Leuven.
+// Solderpad Hardware License, Version 0.51, see LICENSE for details.
+// SPDX-License-Identifier: SHL-0.51
+
+// Author: Ruichu Ao <ruichuao@gmail.com>
+
 package mx.array
 
 import chisel3._
@@ -477,19 +483,19 @@ class PEArrayWrapperFP32(cfg: PEArrayFP32Config) extends Module {
   // downstream consumer sees a complete dot product, not a partial sum.
   // Runtime threshold via io.accumulation_count_i; reset convention: see
   // PEArrayWrapper.
-  val rqAsyncRstN = (!reset.asBool).asAsyncReset                  // ① 反向 reset
-  val accCnt      = withReset(rqAsyncRstN)(RegInit(0.U(32.W)))    // ② 32-bit 计数器
-  val resultDone  = WireDefault(false.B)                           // ③ 默认 false 的 wire
+  val rqAsyncRstN = (!reset.asBool).asAsyncReset                  // Active-low asynchronous reset
+  val accCnt      = withReset(rqAsyncRstN)(RegInit(0.U(32.W)))    // Accumulation counter
+  val resultDone  = WireDefault(false.B)                          // Completion pulse
 
-  when (peValidOut) {                                              // ④ 只在 PE 输出有效时计数
-    when (accCnt === io.accumulation_count_i - 1.U) {              //   ⑤ 数到 N-1 ⇒ 完整 dot product
-      accCnt     := 0.U                                            //   ⑥ 清零计数器
-      resultDone := true.B                                         //   ⑦ 单周期脉冲,通知 rq 采样
+  when (peValidOut) {                                              // Count valid PE outputs
+    when (accCnt === io.accumulation_count_i - 1.U) {             // Complete dot product
+      accCnt     := 0.U                                           // Reset counter
+      resultDone := true.B                                        // Trigger requantization
     } .otherwise {
-      accCnt := accCnt + 1.U                                       //   ⑧ 否则继续累加
+      accCnt := accCnt + 1.U                                      // Continue accumulating
     }
   }
-  when (io.acc_reset_i) {                                          // ⑨ 外部 acc_reset 来 → 同步重置
+  when (io.acc_reset_i) {                                         // Synchronous reset
     accCnt := 0.U
   }
   io.valid_out := resultDone    

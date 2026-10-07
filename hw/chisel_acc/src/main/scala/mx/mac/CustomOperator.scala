@@ -1,3 +1,9 @@
+// Copyright 2026 KU Leuven.
+// Solderpad Hardware License, Version 0.51, see LICENSE for details.
+// SPDX-License-Identifier: SHL-0.51
+
+// Author: Ruichu Ao <ruichuao@gmail.com>
+
 package mx.mac
 
 import chisel3._
@@ -34,7 +40,7 @@ class CustomOperator(val cfg: OperatorConfig) extends Module {
   val(signA,expA,fullMantA) = getExtendedMantissa(io.inA,cfg.elementTypeA)
   val(signB,expB,fullMantB) = getExtendedMantissa(io.inB,cfg.elementTypeB)
 
-  // 扩展位宽防止溢出，加上各格式的隐含缩放指数（INT8 为 −6）
+  // Extend the exponent range and apply each format's implicit scale.
   val adjExpA = Mux(expA === 0.U && cfg.elementTypeA.elementWidthExp.U > 0.U,
                     1.S - cfg.elementTypeA.bias.S, //subnormal fixed to 1-bias
                     expA.zext - cfg.elementTypeA.bias.S) +
@@ -53,13 +59,13 @@ class CustomOperator(val cfg: OperatorConfig) extends Module {
   io.outMant := product
 }
 
-// 供生成 Verilog 使用的入口
+// Verilog generator.
 object OperatorMain extends App {
   def gen(cfg: OperatorConfig): Unit = {
-    // 构造一个文件夹名称
+    // Build the output path.
     val folderName = s"gen_${cfg.elementTypeA.name}_to_${cfg.elementTypeB.name}"
     
-    // 执行生成
+    // Emit Verilog.
     emitVerilog(
       new CustomOperator(cfg), 
       Array("--target-dir", s"generated/$folderName")
@@ -72,7 +78,7 @@ object OperatorMain extends App {
 }
   
 object AllOperatorMain extends App{
-  // 遍历所有 A 和 B 的组合 (嵌套循环)
+  // Generate all format pairs.
   for {
     typeA <- MXFormats.allElementTypes
     typeB <- MXFormats.allElementTypes
@@ -80,7 +86,7 @@ object AllOperatorMain extends App{
     val currentCfg = OperatorConfig(typeA, typeB)
     val dirName = s"generated/${typeA.name}_${typeB.name}"
     
-    println(s"正在为 ${typeA.name} x ${typeB.name} 生成硬件...")
+    println(s"Generating ${typeA.name} x ${typeB.name} hardware...")
     
     emitVerilog(
       new CustomOperator(currentCfg), 

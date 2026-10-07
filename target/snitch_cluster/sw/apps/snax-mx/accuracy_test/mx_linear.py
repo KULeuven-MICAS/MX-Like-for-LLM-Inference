@@ -1,3 +1,4 @@
+# Zijun Zhao <zijun.zhao@student.kuleuven.be>
 # mx_linear.py — MX Linear modules, calibration helpers, and activation scale tracker.
 
 import os

@@ -1,3 +1,4 @@
+# Zijun Zhao <zijun.zhao@student.kuleuven.be>
 # analysis.py — W/A quantization block-level analysis and visualization tools.
 
 import os

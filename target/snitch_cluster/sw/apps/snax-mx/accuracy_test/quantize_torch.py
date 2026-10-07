@@ -1,5 +1,6 @@
 # Copyright 2026 KU Leuven
 # Licensed under the Apache License, Version 2.0
+# Zijun Zhao <zijun.zhao@student.kuleuven.be>
 # quantize_torch.py — PyTorch vectorized MX block quantization.
 
 import math
@@ -553,5 +554,4 @@ def quantize_mx_v3(
         )
 
     return q_arr.bfloat16(), scale_shared, scale_raw, q_raw_out, per_tensor_scale
-
 

@@ -1,3 +1,9 @@
+// Copyright 2026 KU Leuven.
+// Solderpad Hardware License, Version 0.51, see LICENSE for details.
+// SPDX-License-Identifier: SHL-0.51
+
+// Author: Ruichu Ao <ruichuao@gmail.com>
+
 package mx.mac
 
 import chisel3._
@@ -59,7 +65,7 @@ class FDPUWithCustomReductionTree(val scfg: ScaleAddConfig, val vectorSize: Int,
     val accOut   = Output(UInt(32.W))
 
     // ============================================================
-    // 专门为 Trace 增加的测试端口 (仅观察 Lane 0)
+    // Optional trace ports.
     // ============================================================
     val debug = if (istest) Some(new Bundle {
       val all_lanes_fp32    = Output(Vec(vectorSize, UInt(32.W)))

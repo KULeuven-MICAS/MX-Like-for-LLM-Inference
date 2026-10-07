@@ -1,3 +1,9 @@
+// Copyright 2026 KU Leuven.
+// Solderpad Hardware License, Version 0.51, see LICENSE for details.
+// SPDX-License-Identifier: SHL-0.51
+
+// Author: Ruichu Ao <ruichuao@gmail.com>
+
 package mx.mac
 
 import chisel3._
@@ -201,10 +207,10 @@ class ScaleToFP32(val scfg: ScaleAddConfig) extends Module {
   val mant23    = paddedShift(safeExtractPos, safeExtractPos - 22)
   val guardBit  = paddedShift(safeExtractPos - 23)
   val roundBit  = paddedShift(safeExtractPos - 24)
-  val stickyBit = paddedShift(safeExtractPos - 25, 0).orR || (lzc > (mantWidth - 1).U) //补齐sticky
+  val stickyBit = paddedShift(safeExtractPos - 25, 0).orR || (lzc > (mantWidth - 1).U) // Include discarded bits
 
   val roundUp   = guardBit && (mant23(0) || roundBit || stickyBit)
-  val roundedM  = mant23 +& roundUp // 使用 +& 保留进位
+  val roundedM  = mant23 +& roundUp // Preserve carry
 
   val roundCarry = roundedM(23)
   val finalMant  = roundedM(22, 0)
@@ -217,7 +223,7 @@ class ScaleToFP32(val scfg: ScaleAddConfig) extends Module {
   val finalExp = Mux(isOverflow,  255.U(8.W),
                  Mux(isUnderflow, 0.U(8.W), adjustedExp.asUInt(7, 0)))
 
-  // 零值强制清零；下溢（次正规结果）同样清零（FTZ）
+  // Flush zero and underflow to zero.
   io.out := Mux(isZero || isUnderflow, 0.U(32.W), Cat(io.inSign, finalExp, finalMant))
 }
 
