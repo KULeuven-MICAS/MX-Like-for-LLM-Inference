@@ -81,7 +81,8 @@ For a quick start, we recommend using the pre-built SNAX Docker container.
 
 ```bash
 git clone --recurse-submodules \
-  https://github.com/MargZhao/MX-like-Tensor-Core-for-LLM-Inference-with-NPU-Integration-via-HW-SW-Co-Design-Exploration.git \
+  git clone --recurse-submodules \
+  https://github.com/KULeuven-MICAS/MX-Like-for-LLM-Inference.git \
   snax-mx
 cd snax-mx
 ```
@@ -211,8 +212,3 @@ SNAX is an extension of the original [Snitch Cluster](https://github.com/pulp-pl
 Add project-specific acknowledgements and funding information before release.
 -->
 
-
-> **Release maintainer note:** Before publishing this project to the
-> institutional repository, update all repository-specific URLs, including
-> the clone URL, badges, documentation links, and publication metadata.
-> Remove this note after completing the institutional release.
